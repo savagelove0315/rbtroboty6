@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>机器龙来啦：认识机器人系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff;
+            overflow-x: hidden;
+            touch-action: manipulation; /* Improve touch response */
+        }
+        h1, h2, h3, .kid-font {
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+        
+        .slide {
+            display: none;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        .slide.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Card Flip Animation */
+        .flip-card {
+            background-color: transparent;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1rem;
+        }
+        .flip-card-front {
+            background-color: white;
+            color: black;
+            border: 4px solid #e5e7eb;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+            color: white;
+        }
+        
+        /* Specific element colors */
+        .bg-sensor { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+        .bg-control { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+        .bg-power { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+        .bg-drive { background: linear-gradient(135deg, #10b981, #34d399); }
+        .border-sensor { border-color: #3b82f6 !important; }
+        .border-control { border-color: #8b5cf6 !important; }
+        .border-power { border-color: #f59e0b !important; }
+        .border-drive { border-color: #10b981 !important; }
+
+        /* Robot Animations */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .anim-shake { animation: shake 0.5s; animation-iteration-count: infinite; }
+        .anim-freeze { filter: grayscale(100%); opacity: 0.7; }
+        .anim-confused { animation: spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Pulse Text */
+        .pulse-text {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .8; transform: scale(1.05); color: #ef4444;}
+        }
+
+        /* Custom Modal */
+        #msg-modal {
+            backdrop-filter: blur(4px);
+        }
+
+        .btn-game {
+            transition: all 0.2s;
+        }
+        .btn-game:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col relative text-gray-800">
+
+    <header class="bg-white shadow-md p-4 flex justify-between items-center z-10 sticky top-0">
+        <div class="flex items-center gap-2">
+            <span class="text-3xl">🤖</span>
+            <h1 class="text-2xl text-blue-600">机器人小课堂</h1>
+        </div>
+        <div class="w-1/3 bg-gray-200 rounded-full h-4">
+            <div id="progress-bar" class="bg-blue-500 h-4 rounded-full transition-all duration-500" style="width: 10%;"></div>
+        </div>
+        <div class="text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-300">
+            进度: <span id="slide-counter">1/9</span>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto relative p-4 pb-24 max-w-5xl mx-auto w-full">
+
+        <!-- Slide 1: 开场白 -->
+        <section id="slide-1" class="slide flex-col items-center justify-center min-h-[70vh] text-center gap-6 active">
+            <h1 class="text-5xl md:text-6xl text-blue-600 drop-shadow-sm">什么是机器人？</h1>
+            <div class="text-8xl my-4">🦾🤖🦿</div>
+            
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl border-4 border-yellow-400 max-w-3xl">
+                <p class="text-gray-400 line-through text-lg mb-2">“机器人是一种自动化机器，它拥有协调能力、规划、动作和感应……”</p>
+                <p class="text-red-500 font-bold mb-4">太复杂啦！(小朋友们已关机 😴)</p>
+                
+                <h2 class="text-3xl md:text-4xl text-blue-700 leading-relaxed kid-font">
+                    机器人就是一个会<br>
+                    <span class="text-blue-500">“看情况”</span>、
+                    <span class="text-purple-500">“想办法”</span>、<br>
+                    <span class="text-yellow-500">“有力气”</span>、
+                    <span class="text-green-500">“会行动”</span><br>
+                    的小帮手！
+                </h2>
+            </div>
+        </section>
+
+        <!-- Slide 2: 四大元素 -->
+        <section id="slide-2" class="slide flex-col items-center gap-6">
+            <h1 class="text-4xl text-blue-600 mb-2">机器人的四大法宝</h1>
+            <p class="text-xl bg-yellow-100 px-4 py-2 rounded-full font-bold pulse-text">👇 点击卡片，看看它们像我们的什么部位！</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full px-4 h-full min-h-[300px]">
+                
+                <!-- Card 1 -->
+                <div class="flip-card h-64" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front border-sensor text-blue-600">
+                            <span class="text-6xl mb-4">📡</span>
+                            <h2 class="text-3xl mb-2">感应</h2>
+                            <p class="font-bold">看情况 (发生什么事)</p>
+                        </div>
+                        <div class="flip-card-back bg-sensor">
+                            <span class="text-6xl mb-4">👁️👂</span>
+                            <h2 class="text-3xl mb-2">就像人类的</h2>
+                            <p class="text-2xl font-bold kid-font">眼睛、耳朵、皮肤</p>
+                            <p class="mt-4 text-xl font-black bg-white text-blue-600 px-3 py-1 rounded-full">看到了！</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="flip-card h-64" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front border-control text-purple-600">
+                            <span class="text-6xl mb-4">💻</span>
+                            <h2 class="text-3xl mb-2">控制</h2>
+                            <p class="font-bold">想办法 (决定要怎样做)</p>
+                        </div>
+                        <div class="flip-card-back bg-control">
+                            <span class="text-6xl mb-4">🧠</span>
+                            <h2 class="text-3xl mb-2">就像人类的</h2>
+                            <p class="text-2xl font-bold kid-font">大脑</p>
+                            <p class="mt-4 text-xl font-black bg-white text-purple-600 px-3 py-1 rounded-full">想一想！</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="flip-card h-64" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front border-power text-yellow-600">
+                            <span class="text-6xl mb-4">🔋</span>
+                            <h2 class="text-3xl mb-2">动力源</h2>
+                            <p class="font-bold">有力气 (有能量工作)</p>
+                        </div>
+                        <div class="flip-card-back bg-power">
+                            <span class="text-6xl mb-4">🍚⚡</span>
+                            <h2 class="text-3xl mb-2">就像我们</h2>
+                            <p class="text-2xl font-bold kid-font">吃饭 / 充电</p>
+                            <p class="mt-4 text-xl font-black bg-white text-yellow-600 px-3 py-1 rounded-full">给力气！</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="flip-card h-64" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front border-drive text-green-600">
+                            <span class="text-6xl mb-4">⚙️</span>
+                            <h2 class="text-3xl mb-2">驱动</h2>
+                            <p class="font-bold">会行动 (真的动起来)</p>
+                        </div>
+                        <div class="flip-card-back bg-drive">
+                            <span class="text-6xl mb-4">💪👣</span>
+                            <h2 class="text-3xl mb-2">就像人类的</h2>
+                            <p class="text-2xl font-bold kid-font">手、脚、肌肉</p>
+                            <p class="mt-4 text-xl font-black bg-white text-green-600 px-3 py-1 rounded-full">动起来！</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="mt-8 bg-blue-100 p-4 rounded-xl border-2 border-blue-300 w-full text-center">
+                <h3 class="text-2xl font-bold text-blue-800 mb-2">📢 我们一起念口诀：</h3>
+                <p class="text-xl md:text-2xl font-bold text-gray-700 leading-loose">
+                    <span class="text-blue-600">感应：看到了！</span> | 
+                    <span class="text-purple-600">控制：想一想！</span><br>
+                    <span class="text-yellow-600">动力源：给力气！</span> | 
+                    <span class="text-green-600">驱动：动起来！</span>
+                </p>
+            </div>
+        </section>
+
+        <!-- Slide 3: 坏掉的机器人演绎 -->
+        <section id="slide-3" class="slide flex-col items-center gap-4">
+            <h1 class="text-4xl text-blue-600 text-center">🤖 老师机器人坏掉啦！</h1>
+            <p class="text-xl mb-4">“早安，同学们。我是机器人。可是我今天坏掉了。你们要帮我检查哪里坏了。”</p>
+            
+            <div class="flex flex-col md:flex-row w-full gap-8 mt-4">
+                <!-- Character Display -->
+                <div class="flex-1 bg-gray-900 rounded-3xl p-8 flex flex-col items-center justify-center relative shadow-2xl border-8 border-gray-700 h-80">
+                    <div id="robot-actor" class="text-9xl transition-all duration-300">🤖</div>
+                    <div id="robot-dialogue" class="absolute top-4 bg-white px-4 py-2 rounded-2xl text-lg font-bold shadow-md opacity-0 transition-opacity">准备就绪</div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex-1 flex flex-col gap-4">
+                    <h3 class="text-2xl kid-font text-center text-gray-700 bg-yellow-200 py-2 rounded-lg">点一下，看看发生什么事：</h3>
+                    
+                    <button onclick="playScenario(1)" class="btn-game bg-white border-4 border-blue-400 text-left p-4 rounded-xl shadow hover:bg-blue-50 flex items-center gap-4">
+                        <span class="text-3xl">💥</span>
+                        <div>
+                            <div class="font-bold text-xl text-blue-800">情况 1：撞到桌子了！</div>
+                            <div class="text-gray-500 text-sm">为什么会撞到？哪个部分坏了？</div>
+                        </div>
+                    </button>
+                    
+                    <button onclick="playScenario(2)" class="btn-game bg-white border-4 border-purple-400 text-left p-4 rounded-xl shadow hover:bg-purple-50 flex items-center gap-4">
+                        <span class="text-3xl">➡️🚶‍♂️</span>
+                        <div>
+                            <div class="font-bold text-xl text-purple-800">情况 2：叫向左，偏向右！</div>
+                            <div class="text-gray-500 text-sm">有听到指令，为什么做错？</div>
+                        </div>
+                    </button>
+
+                    <button onclick="playScenario(3)" class="btn-game bg-white border-4 border-yellow-400 text-left p-4 rounded-xl shadow hover:bg-yellow-50 flex items-center gap-4">
+                        <span class="text-3xl">🧊</span>
+                        <div>
+                            <div class="font-bold text-xl text-yellow-800">情况 3：突然不动了！</div>
+                            <div class="text-gray-500 text-sm">刚才还好好的，怎么全身僵硬？</div>
+                        </div>
+                    </button>
+
+                    <button onclick="playScenario(4)" class="btn-game bg-white border-4 border-green-400 text-left p-4 rounded-xl shadow hover:bg-green-50 flex items-center gap-4">
+                        <span class="text-3xl">🗣️🚫</span>
+                        <div>
+                            <div class="font-bold text-xl text-green-800">情况 4：说要走，腿不动！</div>
+                            <div class="text-gray-500 text-sm">知道要走，也有电，怎么走不了？</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: 用身体解释机器人系统 -->
+        <section id="slide-4" class="slide flex-col items-center gap-6">
+            <h1 class="text-4xl text-blue-600 mb-2">其实，你也是一个“机器人”！</h1>
+            <p class="text-xl text-center bg-blue-50 px-6 py-3 rounded-xl">我们每天都在做和机器人一样的事情。不信？看看碰到热水杯的反应：</p>
+
+            <div class="relative w-full max-w-4xl mx-auto mt-8 bg-white rounded-3xl shadow-xl p-8 border-2 border-gray-200">
+                <!-- SVG Illustration -->
+                <div class="flex justify-center mb-8">
+                     <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="60" r="30" fill="#FDE68A"/> <!-- Head -->
+                        <rect x="85" y="90" width="30" height="70" rx="10" fill="#93C5FD"/> <!-- Body -->
+                        <path d="M75 100 Q 40 120 50 150" stroke="#FDE68A" stroke-width="15" stroke-linecap="round"/> <!-- Left Arm to cup -->
+                        <rect x="30" y="140" width="25" height="30" rx="5" fill="#EF4444"/> <!-- Hot Cup -->
+                        <path d="M35 130 Q 42 110 50 130" stroke="#F87171" stroke-width="2" fill="none"/> <!-- Steam -->
+                        <path d="M45 135 Q 52 115 60 135" stroke="#F87171" stroke-width="2" fill="none"/> <!-- Steam -->
+                    </svg>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <button onclick="revealHumanRobot('sensor')" class="btn-game bg-blue-100 hover:bg-blue-200 p-4 rounded-xl text-center border-2 border-blue-300">
+                        <div class="text-3xl mb-2">🔥🖐️</div>
+                        <div class="font-bold text-gray-800">1. 手碰到好烫</div>
+                        <div id="hr-sensor" class="hidden mt-2 text-blue-700 font-bold kid-font text-xl">这是 感应</div>
+                    </button>
+                    
+                    <button onclick="revealHumanRobot('control')" class="btn-game bg-purple-100 hover:bg-purple-200 p-4 rounded-xl text-center border-2 border-purple-300">
+                        <div class="text-3xl mb-2">⚠️🧠</div>
+                        <div class="font-bold text-gray-800">2. 大脑想：危险！</div>
+                        <div id="hr-control" class="hidden mt-2 text-purple-700 font-bold kid-font text-xl">这是 控制</div>
+                    </button>
+
+                    <button onclick="revealHumanRobot('power')" class="btn-game bg-yellow-100 hover:bg-yellow-200 p-4 rounded-xl text-center border-2 border-yellow-300">
+                        <div class="text-3xl mb-2">🍞💪</div>
+                        <div class="font-bold text-gray-800">3. 吃了早餐有力气</div>
+                        <div id="hr-power" class="hidden mt-2 text-yellow-700 font-bold kid-font text-xl">这是 动力源</div>
+                    </button>
+
+                    <button onclick="revealHumanRobot('drive')" class="btn-game bg-green-100 hover:bg-green-200 p-4 rounded-xl text-center border-2 border-green-300">
+                        <div class="text-3xl mb-2">🏃‍♂️💨</div>
+                        <div class="font-bold text-gray-800">4. 手马上缩回来</div>
+                        <div id="hr-drive" class="hidden mt-2 text-green-700 font-bold kid-font text-xl">这是 驱动</div>
+                    </button>
+                </div>
+
+                <div class="mt-8 text-center bg-gray-50 p-4 rounded-xl text-gray-600 italic">
+                    “机器人也是一样。它不是有魔法，它只是用机器的方法，模仿我们人类做同样的事情。”
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: 机械手臂 -->
+        <section id="slide-5" class="slide flex-col items-center gap-6">
+            <h1 class="text-4xl text-blue-600 text-center">机械手臂怎么抓东西？</h1>
+            <p class="text-xl mb-4">它不是一次就一定做对！就像你投篮一样，投偏了要调整。</p>
+
+            <div class="bg-white p-8 rounded-3xl shadow-lg w-full max-w-4xl">
+                
+                <div class="flex justify-between items-center mb-12 flex-wrap gap-4 relative">
+                    <!-- Flow Steps -->
+                    <div class="flex-1 text-center relative z-10">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto text-3xl border-4 border-purple-500 mb-2">🧠</div>
+                        <div class="font-bold kid-font text-xl">想做</div>
+                    </div>
+                    <div class="text-2xl text-gray-400 font-bold">→</div>
+                    
+                    <div class="flex-1 text-center relative z-10">
+                        <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto text-3xl border-4 border-yellow-500 mb-2">⚡</div>
+                        <div class="font-bold kid-font text-xl">给力</div>
+                    </div>
+                    <div class="text-2xl text-gray-400 font-bold">→</div>
+
+                    <div class="flex-1 text-center relative z-10">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto text-3xl border-4 border-green-500 mb-2">🦾</div>
+                        <div class="font-bold kid-font text-xl">动作</div>
+                    </div>
+                    <div class="text-2xl text-gray-400 font-bold">→</div>
+
+                    <div class="flex-1 text-center relative z-10">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto text-3xl border-4 border-blue-500 mb-2">👁️</div>
+                        <div class="font-bold kid-font text-xl">检查</div>
+                    </div>
+                    <div class="text-2xl text-gray-400 font-bold">→</div>
+
+                    <div class="flex-1 text-center relative z-10">
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-3xl border-4 border-red-500 mb-2">🔧</div>
+                        <div class="font-bold kid-font text-xl">调整</div>
+                    </div>
+                    <div class="text-2xl text-gray-400 font-bold">→</div>
+
+                    <div class="flex-1 text-center relative z-10">
+                        <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl border-4 border-emerald-500 mb-2">🎉</div>
+                        <div class="font-bold kid-font text-xl">完成</div>
+                    </div>
+
+                    <!-- Return Loop SVG -->
+                    <svg class="absolute top-16 left-0 w-full h-24 pointer-events-none" preserveAspectRatio="none">
+                        <path d="M 75% 20 Q 50% 100 15% 20" fill="none" stroke="#EF4444" stroke-width="4" stroke-dasharray="8,8" />
+                        <polygon points="15%,20 18%,30 10%,25" fill="#EF4444" />
+                        <text x="45%" y="65" fill="#EF4444" font-weight="bold" font-size="16">还没到？再试一次！</text>
+                    </svg>
+                </div>
+
+                <div class="bg-gray-800 text-white p-6 rounded-2xl text-center">
+                    <h3 class="text-2xl text-yellow-400 mb-4">简单来说就是：</h3>
+                    <p class="text-3xl font-bold kid-font tracking-widest">做 — 看 — 改</p>
+                    <p class="text-gray-400 mt-2">直到完成任务！</p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Slide 6: 扫地机器人 -->
+        <section id="slide-6" class="slide flex-col items-center gap-6">
+            <h1 class="text-4xl text-blue-600 text-center">扫地机器人的秘密</h1>
+            <p class="text-xl">谁家里有它？为什么它不会掉下楼梯？点一点找答案！</p>
+
+            <div class="flex flex-col md:flex-row gap-8 w-full max-w-5xl bg-white p-8 rounded-3xl shadow-lg">
+                <!-- Interactive Diagram -->
+                <div class="flex-1 relative aspect-square max-w-md mx-auto bg-gray-100 rounded-full border-8 border-gray-300 shadow-inner flex items-center justify-center">
+                    <!-- Base design -->
+                    <div class="absolute inset-4 rounded-full border-4 border-gray-200"></div>
+                    <div class="absolute w-24 h-24 bg-gray-800 rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20"></div>
+
+                    <!-- Hotspots -->
+                    <button onclick="showVacuumInfo('sensor')" class="absolute top-10 left-1/2 transform -translate-x-1/2 bg-blue-500 hover:bg-blue-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-2xl z-10 btn-game border-4 border-white transition-transform">👁️</button>
+                    
+                    <button onclick="showVacuumInfo('control')" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-purple-500 hover:bg-purple-600 text-white w-20 h-20 rounded-full shadow-lg flex items-center justify-center text-3xl z-10 btn-game border-4 border-white transition-transform">🧠</button>
+                    
+                    <button onclick="showVacuumInfo('power')" class="absolute bottom-1/4 left-1/4 bg-yellow-500 hover:bg-yellow-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-xl z-10 btn-game border-4 border-white transition-transform">🔋</button>
+                    
+                    <button onclick="showVacuumInfo('drive')" class="absolute bottom-1/4 right-1/4 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-xl z-10 btn-game border-4 border-white transition-transform">🛞</button>
+                </div>
+
+                <!-- Info Panel -->
+                <div class="flex-1 flex flex-col justify-center">
+                    <div id="vacuum-info-box" class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-200 min-h-[250px] flex flex-col justify-center">
+                        <div class="text-gray-500 text-center text-xl animate-pulse">👈 点击左侧扫地机器人的部件，解开它的秘密！</div>
+                    </div>
+
+                    <!-- Sentence Frame -->
+                    <div class="mt-6 bg-gray-800 text-white p-4 rounded-xl">
+                        <p class="font-bold mb-2 text-yellow-400">造句练习：</p>
+                        <p class="leading-relaxed">
+                            扫地机器人看到墙壁，所以它的<span class="text-blue-300 font-bold">感应器</span>感应到障碍物。
+                            <span class="text-purple-300 font-bold">控制系统</span>决定转弯。
+                            <span class="text-yellow-300 font-bold">动力源</span>提供电能。
+                            <span class="text-green-300 font-bold">驱动器</span>让轮子移动。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 7: 互动活动：机器人侦探 -->
+        <section id="slide-7" class="slide flex-col items-center gap-4">
+            <h1 class="text-4xl text-blue-600 text-center">🕵️‍♂️ 机器人侦探</h1>
+            <p class="text-xl text-center">不是长得像人的才是机器人哦！判断下面这些是不是机器人系统？</p>
+
+            <div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-4xl relative">
+                
+                <div id="detective-game-area" class="flex flex-col items-center">
+                    <div id="detective-item-emoji" class="text-9xl mb-4 h-32 flex items-center justify-center">🧹🤖</div>
+                    <h2 id="detective-item-name" class="text-3xl font-bold mb-8">扫地机器人</h2>
+
+                    <div class="flex gap-8 w-full justify-center">
+                        <button onclick="answerDetective(true)" class="btn-game bg-green-500 hover:bg-green-600 text-white text-2xl font-bold py-4 px-12 rounded-full shadow-lg">✅ 是的</button>
+                        <button onclick="answerDetective(false)" class="btn-game bg-red-500 hover:bg-red-600 text-white text-2xl font-bold py-4 px-12 rounded-full shadow-lg">❌ 不是</button>
+                    </div>
+                    
+                    <div id="detective-feedback" class="mt-8 text-xl font-bold text-center h-20 p-4 rounded-xl w-full bg-gray-50 transition-opacity opacity-0">
+                        <!-- Feedback text goes here -->
+                    </div>
+                </div>
+
+                <div class="absolute top-4 right-4 bg-gray-200 px-3 py-1 rounded-full font-bold text-gray-600">
+                    <span id="detective-score">1</span> / 6
+                </div>
+
+            </div>
+            <div class="bg-yellow-100 p-4 rounded-xl text-center border border-yellow-300 text-yellow-800 font-bold mt-2">
+                💡 秘诀：只要它能感应、控制、用动力和驱动来完成任务，它就有机器人系统！
+            </div>
+        </section>
+
+        <!-- Slide 8: 故障诊断游戏 -->
+        <section id="slide-8" class="slide flex-col items-center gap-6">
+            <h1 class="text-4xl text-blue-600 text-center">🔧 机器人维修师</h1>
+            <p class="text-xl text-center">机器龙工厂出问题了！根据症状，找出是哪个部件坏了。</p>
+
+            <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Problem List -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg flex flex-col gap-4">
+                    <h3 class="text-2xl font-bold text-gray-700 border-b-2 pb-2">客户报修单</h3>
+                    
+                    <div onclick="selectProblem(0, this)" class="problem-item cursor-pointer p-4 rounded-xl border-2 border-gray-200 hover:bg-blue-50 transition-colors">
+                        <span class="text-xl font-bold">症状 1：</span> 机器人看不到墙，一直撞！💥
+                    </div>
+                    <div onclick="selectProblem(1, this)" class="problem-item cursor-pointer p-4 rounded-xl border-2 border-gray-200 hover:bg-blue-50 transition-colors">
+                        <span class="text-xl font-bold">症状 2：</span> 有看到墙，但还是撞上去，大脑糊涂了！😵
+                    </div>
+                    <div onclick="selectProblem(2, this)" class="problem-item cursor-pointer p-4 rounded-xl border-2 border-gray-200 hover:bg-blue-50 transition-colors">
+                        <span class="text-xl font-bold">症状 3：</span> 知道要走，但完全不动，腿坏了！🦵
+                    </div>
+                    <div onclick="selectProblem(3, this)" class="problem-item cursor-pointer p-4 rounded-xl border-2 border-gray-200 hover:bg-blue-50 transition-colors">
+                        <span class="text-xl font-bold">症状 4：</span> 突然全身黑屏，停电了！⬛
+                    </div>
+                </div>
+
+                <!-- Tools/Solutions -->
+                <div class="bg-gray-800 p-6 rounded-3xl shadow-lg flex flex-col gap-4">
+                    <h3 class="text-2xl font-bold text-white border-b-2 border-gray-600 pb-2">零件仓库</h3>
+                    <p class="text-gray-400 text-sm">先点击左侧症状，再点击这里对应的坏零件。</p>
+
+                    <div class="grid grid-cols-2 gap-4 h-full">
+                        <button onclick="checkDiagnosis('sensor')" class="btn-game bg-blue-500 hover:bg-blue-600 text-white rounded-xl flex flex-col items-center justify-center p-4 border-b-4 border-blue-700">
+                            <span class="text-4xl mb-2">📡</span>
+                            <span class="font-bold">感应坏了</span>
+                        </button>
+                        <button onclick="checkDiagnosis('control')" class="btn-game bg-purple-500 hover:bg-purple-600 text-white rounded-xl flex flex-col items-center justify-center p-4 border-b-4 border-purple-700">
+                            <span class="text-4xl mb-2">💻</span>
+                            <span class="font-bold">控制出错</span>
+                        </button>
+                        <button onclick="checkDiagnosis('drive')" class="btn-game bg-green-500 hover:bg-green-600 text-white rounded-xl flex flex-col items-center justify-center p-4 border-b-4 border-green-700">
+                            <span class="text-4xl mb-2">⚙️</span>
+                            <span class="font-bold">驱动坏了</span>
+                        </button>
+                        <button onclick="checkDiagnosis('power')" class="btn-game bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl flex flex-col items-center justify-center p-4 border-b-4 border-yellow-700">
+                            <span class="text-4xl mb-2">🔋</span>
+                            <span class="font-bold">动力源没电</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="diagnosis-result" class="text-2xl font-bold h-8 text-green-600"></div>
+        </section>
+
+        <!-- Slide 9: 设计机器龙 -->
+        <section id="slide-9" class="slide flex-col items-center gap-6">
+            <h1 class="text-5xl text-blue-600 text-center kid-font">🐉 终极任务：设计机器龙</h1>
+            <p class="text-xl text-center">如果你要制作一只机器龙，四大法宝应该放在哪里？</p>
+
+            <div class="bg-white p-8 rounded-3xl shadow-xl border-4 border-blue-300 w-full max-w-5xl flex flex-col md:flex-row gap-8">
+                
+                <!-- Dragon Visual -->
+                <div class="flex-1 relative bg-blue-50 rounded-2xl flex items-center justify-center border-2 border-dashed border-blue-300 min-h-[300px]">
+                    <div class="text-9xl">🦖</div>
+                    <!-- Markers -->
+                    <div class="absolute top-1/4 left-1/3 bg-white p-1 rounded border shadow-sm text-sm font-bold text-blue-500">眼睛/鼻子</div>
+                    <div class="absolute top-1/2 left-1/2 bg-white p-1 rounded border shadow-sm text-sm font-bold text-purple-500 transform -translate-x-1/2">肚子里面</div>
+                    <div class="absolute top-1/3 right-1/4 bg-white p-1 rounded border shadow-sm text-sm font-bold text-yellow-500">背部</div>
+                    <div class="absolute bottom-1/4 right-1/4 bg-white p-1 rounded border shadow-sm text-sm font-bold text-green-500">脚/尾巴</div>
+                </div>
+
+                <!-- Selection Form -->
+                <div class="flex-1 flex flex-col gap-4">
+                    <div class="bg-blue-100 p-4 rounded-xl">
+                        <label class="font-bold text-blue-800 block mb-2">1. 我会把【感应器】装在：</label>
+                        <select class="w-full p-3 rounded-lg border border-blue-300 outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <option>眼睛 / 鼻子 (为了看前面有没有障碍物)</option>
+                            <option>脚底 (不合理哦)</option>
+                            <option>尾巴末端 (不合理哦)</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-purple-100 p-4 rounded-xl">
+                        <label class="font-bold text-purple-800 block mb-2">2. 我会把【控制器】装在：</label>
+                        <select class="w-full p-3 rounded-lg border border-purple-300 outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+                            <option>肚子 / 头部里面 (像大脑一样保护起来)</option>
+                            <option>脚指甲上 (太容易弄坏啦)</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-yellow-100 p-4 rounded-xl">
+                        <label class="font-bold text-yellow-800 block mb-2">3. 我会把【动力源(电池)】装在：</label>
+                        <select class="w-full p-3 rounded-lg border border-yellow-300 outline-none focus:ring-2 focus:ring-yellow-500 text-lg">
+                            <option>背部 / 肚子 (空间大，方便换电池)</option>
+                            <option>眼睛里 (放不下呀)</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-green-100 p-4 rounded-xl">
+                        <label class="font-bold text-green-800 block mb-2">4. 我会把【驱动器(电机)】装在：</label>
+                        <select class="w-full p-3 rounded-lg border border-green-300 outline-none focus:ring-2 focus:ring-green-500 text-lg">
+                            <option>脚、尾巴、嘴巴关节 (让它走路、摇尾、张嘴)</option>
+                            <option>背上不动的地方 (那就没用啦)</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-4 bg-green-500 text-white px-8 py-4 rounded-full text-2xl font-bold shadow-lg kid-font text-center animate-bounce">
+                太棒了！你已经是一名合格的机器人工程师啦！🎉
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Navigation Footer -->
+    <footer class="bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 flex justify-between items-center fixed bottom-0 w-full z-10">
+        <button onclick="prevSlide()" id="btn-prev" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-xl flex items-center gap-2 opacity-50 cursor-not-allowed transition-all">
+            <span>◀</span> 上一页
+        </button>
+        <div class="text-gray-400 text-sm hidden md:block">记住口诀：看情况、想办法、有力气、会行动</div>
+        <button onclick="nextSlide()" id="btn-next" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl flex items-center gap-2 shadow-md transition-all transform hover:scale-105">
+            下一页 <span>▶</span>
+        </button>
+    </footer>
+
+    <!-- Custom Message Modal (Replacing alert()) -->
+    <div id="msg-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl transform scale-95 transition-transform" id="msg-content">
+            <div class="text-5xl text-center mb-4" id="msg-icon">ℹ️</div>
+            <h3 class="text-2xl font-bold text-center mb-2" id="msg-title">提示</h3>
+            <p class="text-gray-600 text-center mb-6" id="msg-text">内容</p>
+            <button onclick="closeModal()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition-colors">我知道了</button>
+        </div>
+    </div>
+
+    <script>
+        /* 
+         * Application State
+         */
+        const TOTAL_SLIDES = 9;
+        let currentSlide = 1;
+
+        /* 
+         * Navigation Logic
+         */
+        function updateUI() {
+            // Hide all slides
+            document.querySelectorAll('.slide').forEach(s => {
+                s.classList.remove('active');
+            });
+            
+            // Show current slide
+            const activeSlide = document.getElementById(`slide-${currentSlide}`);
+            if(activeSlide) {
+                activeSlide.classList.add('active');
+            }
+
+            // Update Progress Bar
+            const progress = (currentSlide / TOTAL_SLIDES) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('slide-counter').innerText = `${currentSlide}/${TOTAL_SLIDES}`;
+
+            // Update Buttons
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+
+            if (currentSlide === 1) {
+                btnPrev.classList.add('opacity-50', 'cursor-not-allowed');
+                btnPrev.classList.remove('hover:bg-gray-300');
+            } else {
+                btnPrev.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnPrev.classList.add('hover:bg-gray-300');
+            }
+
+            if (currentSlide === TOTAL_SLIDES) {
+                btnNext.innerHTML = '重新开始 <span>🔄</span>';
+                btnNext.classList.replace('bg-blue-600', 'bg-green-600');
+                btnNext.classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
+            } else {
+                btnNext.innerHTML = '下一页 <span>▶</span>';
+                btnNext.classList.replace('bg-green-600', 'bg-blue-600');
+                btnNext.classList.replace('hover:bg-green-700', 'hover:bg-blue-700');
+            }
+            
+            // Reset state for specific slides if needed
+            if(currentSlide === 3) resetScenario();
+            if(currentSlide === 7) initDetectiveGame();
+            if(currentSlide === 8) resetTroubleshooting();
+
+            // Scroll to top of main area
+            document.querySelector('main').scrollTo(0,0);
+        }
+
+        function nextSlide() {
+            if (currentSlide < TOTAL_SLIDES) {
+                currentSlide++;
+                updateUI();
+            } else {
+                currentSlide = 1; // Restart
+                updateUI();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                updateUI();
+            }
+        }
+
+        /* 
+         * Custom Modal Logic (replaces alert)
+         */
+        function showModal(icon, title, text, colorClass = 'text-blue-600') {
+            document.getElementById('msg-icon').innerText = icon;
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-title').className = `text-2xl font-bold text-center mb-2 ${colorClass}`;
+            document.getElementById('msg-text').innerHTML = text;
+            
+            const modal = document.getElementById('msg-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('msg-content').classList.remove('scale-95');
+                document.getElementById('msg-content').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            document.getElementById('msg-content').classList.remove('scale-100');
+            document.getElementById('msg-content').classList.add('scale-95');
+            setTimeout(() => {
+                document.getElementById('msg-modal').classList.add('hidden');
+            }, 200);
+        }
+
+        /* 
+         * Slide 3: Broken Robot Logic
+         */
+        function resetScenario() {
+            const actor = document.getElementById('robot-actor');
+            const dialog = document.getElementById('robot-dialogue');
+            actor.className = 'text-9xl transition-all duration-300';
+            actor.innerText = '🤖';
+            dialog.style.opacity = 0;
+        }
+
+        function playScenario(type) {
+            const actor = document.getElementById('robot-actor');
+            const dialog = document.getElementById('robot-dialogue');
+            actor.className = 'text-9xl transition-all duration-300'; // Reset
+            dialog.style.opacity = 1;
+
+            if (type === 1) {
+                actor.innerText = '💥🤖';
+                actor.classList.add('anim-shake');
+                dialog.innerText = '哎哟！撞到桌子了！';
+                dialog.className = 'absolute top-4 bg-red-100 text-red-600 px-4 py-2 rounded-2xl text-lg font-bold shadow-md transition-opacity border border-red-300';
+                setTimeout(() => showModal('👁️', '感应器坏了！', '机器人看不到前面的障碍物，就像我们闭着眼睛走路一样。<br><br><span class="font-bold text-blue-500">因为没有感应，所以撞上了。</span>', 'text-red-500'), 1000);
+            } else if (type === 2) {
+                actor.innerText = '🤖❓';
+                actor.classList.add('anim-confused');
+                dialog.innerText = '向左？好的，我向右转！';
+                dialog.className = 'absolute top-4 bg-purple-100 text-purple-600 px-4 py-2 rounded-2xl text-lg font-bold shadow-md transition-opacity border border-purple-300';
+                setTimeout(() => showModal('🧠', '控制器出错了！', '耳朵（感应器）听到了指令，但是大脑（控制器）处理错了，给出了相反的命令。<br><br><span class="font-bold text-purple-500">想错办法了！</span>', 'text-purple-500'), 1500);
+            } else if (type === 3) {
+                actor.innerText = '🤖💤';
+                actor.classList.add('anim-freeze');
+                dialog.innerText = '... (没声音了) ...';
+                dialog.className = 'absolute top-4 bg-gray-200 text-gray-600 px-4 py-2 rounded-2xl text-lg font-bold shadow-md transition-opacity border border-gray-400';
+                setTimeout(() => showModal('🔋', '动力源没电了！', '没有能量，机器人就完全瘫痪了，什么都做不了。<br><br><span class="font-bold text-yellow-600">需要充电啦！</span>', 'text-yellow-500'), 1000);
+            } else if (type === 4) {
+                actor.innerText = '🤖💦';
+                actor.classList.add('anim-shake'); // Straining
+                dialog.innerText = '大脑：走！ 腿：...动不了...';
+                dialog.className = 'absolute top-4 bg-green-100 text-green-700 px-4 py-2 rounded-2xl text-lg font-bold shadow-md transition-opacity border border-green-300';
+                setTimeout(() => showModal('⚙️', '驱动器坏了！', '知道要走，也有电，但是负责移动的马达（驱动）卡住了或坏了。<br><br><span class="font-bold text-green-600">脚动不起来！</span>', 'text-green-500'), 1000);
+            }
+        }
+
+        /* 
+         * Slide 4: Human Robot Logic
+         */
+        function revealHumanRobot(type) {
+            const el = document.getElementById(`hr-${type}`);
+            el.classList.remove('hidden');
+            el.classList.add('animate-bounce');
+        }
+
+        /* 
+         * Slide 6: Vacuum Robot Logic
+         */
+        function showVacuumInfo(part) {
+            const box = document.getElementById('vacuum-info-box');
+            let content = '';
+            
+            if (part === 'sensor') {
+                content = `
+                    <div class="text-4xl mb-2">👁️ 下视传感器 / 激光扫描</div>
+                    <h3 class="text-2xl font-bold text-blue-700 mb-2">【感应】</h3>
+                    <p class="text-gray-700">扫地机器人底部的传感器能“看到”楼梯，防止掉下去；头顶的激光能“画出”房间的地图，发现墙壁。</p>
+                `;
+            } else if (part === 'control') {
+                content = `
+                    <div class="text-4xl mb-2">🧠 中央处理器 (芯片)</div>
+                    <h3 class="text-2xl font-bold text-purple-700 mb-2">【控制】</h3>
+                    <p class="text-gray-700">它的大脑！分析传感器传来的数据，决定“这里扫过了不要再扫”、“前面有墙要转弯”、“快没电了要回家”。</p>
+                `;
+            } else if (part === 'power') {
+                content = `
+                    <div class="text-4xl mb-2">🔋 充电电池</div>
+                    <h3 class="text-2xl font-bold text-yellow-700 mb-2">【动力源】</h3>
+                    <p class="text-gray-700">藏在肚子里的锂电池。提供电能，让大脑能思考，让轮子能转动。没电了就会自动回基站充电。</p>
+                `;
+            } else if (part === 'drive') {
+                content = `
+                    <div class="text-4xl mb-2">🛞 驱动轮 / 边刷电机</div>
+                    <h3 class="text-2xl font-bold text-green-700 mb-2">【驱动】</h3>
+                    <p class="text-gray-700">听从大脑的指挥，消耗电池的能量，真正转动起来的马达和轮子，负责带着机器人跑来跑去和扫地。</p>
+                `;
+            }
+            
+            box.innerHTML = content;
+            box.className = 'bg-white p-6 rounded-2xl border-4 shadow-lg min-h-[250px] flex flex-col justify-center animate-pulse border-' + part; // Use tailwind border colors
+        }
+
+        /* 
+         * Slide 7: Detective Game Logic
+         */
+        const detectiveItems = [
+            { name: '扫地机器人', emoji: '🧹🤖', isRobot: true, reason: '它能【感应】灰尘和墙壁，自己【决定】路线，并【驱动】轮子清扫。' },
+            { name: '超市自动门', emoji: '🚪✨', isRobot: true, reason: '它有【感应器】发现人来，控制系统【决定】开门，电机【驱动】门打开。虽然很简单，但它也是机器人系统！' },
+            { name: '普通电风扇', emoji: '🌪️🔌', isRobot: false, reason: '它虽然有动力源和驱动器让扇叶转，但它不能自己“看情况”（没有感应），也不能自己“想办法”（没有控制），必须靠人按开关。' },
+            { name: '工厂机械手臂', emoji: '🦾🏭', isRobot: true, reason: '它可以根据编程指令【控制】动作，【感应】物品位置，并【驱动】关节夹取东西。' },
+            { name: '遥控玩具车', emoji: '🏎️🎮', isRobot: false, reason: '虽然它会动，但它的大脑在玩它的人手里。它只是执行遥控器的信号，没有自己“想办法”的能力。（除非是自动驾驶车）' },
+            { name: '智能声控灯', emoji: '💡🗣️', isRobot: true, reason: '广义上是的！【感应】声音，【控制】判断是不是开灯指令，利用电力【驱动】发光。' }
+        ];
+        let currentItemIndex = 0;
+
+        function initDetectiveGame() {
+            currentItemIndex = 0;
+            updateDetectiveUI();
+        }
+
+        function updateDetectiveUI() {
+            if (currentItemIndex < detectiveItems.length) {
+                const item = detectiveItems[currentItemIndex];
+                document.getElementById('detective-item-emoji').innerText = item.emoji;
+                document.getElementById('detective-item-name').innerText = item.name;
+                document.getElementById('detective-score').innerText = currentItemIndex + 1;
+                document.getElementById('detective-feedback').style.opacity = 0;
+            } else {
+                // Game Finished
+                document.getElementById('detective-item-emoji').innerText = '🎉🏆';
+                document.getElementById('detective-item-name').innerText = '侦探任务完成！';
+                document.getElementById('detective-game-area').innerHTML = `
+                    <div class="text-9xl mb-4 h-32 flex items-center justify-center">🎉🏆</div>
+                    <h2 class="text-3xl font-bold mb-4">侦探任务完成！</h2>
+                    <p class="text-xl text-center text-gray-600 mb-8">记住：机器人不一定要像人，只要具备系统四大法宝，它就是广义的机器人！</p>
+                    <button onclick="initDetectiveGame()" class="bg-blue-500 text-white px-8 py-3 rounded-full font-bold">再玩一次</button>
+                `;
+            }
+        }
+
+        function answerDetective(userChoice) {
+            const item = detectiveItems[currentItemIndex];
+            const isCorrect = userChoice === item.isRobot;
+            const feedbackEl = document.getElementById('detective-feedback');
+            
+            if (isCorrect) {
+                feedbackEl.innerHTML = `<span class="text-green-600">✅ 答对啦！</span> ${item.reason}`;
+                feedbackEl.className = 'mt-8 text-lg font-bold text-left p-4 rounded-xl w-full bg-green-50 border border-green-200 transition-opacity opacity-100';
+            } else {
+                feedbackEl.innerHTML = `<span class="text-red-600">❌ 哎呀，再想想！</span> ${item.reason}`;
+                feedbackEl.className = 'mt-8 text-lg font-bold text-left p-4 rounded-xl w-full bg-red-50 border border-red-200 transition-opacity opacity-100';
+            }
+            
+            setTimeout(() => {
+                currentItemIndex++;
+                updateDetectiveUI();
+            }, 3500); // Wait a bit longer to read the explanation
+        }
+
+        /* 
+         * Slide 8: Troubleshooting Logic
+         */
+        let selectedProblemIndex = -1;
+        const correctAnswers = ['sensor', 'control', 'drive', 'power']; // Matches problem symptoms 1-4
+
+        function resetTroubleshooting() {
+            selectedProblemIndex = -1;
+            document.querySelectorAll('.problem-item').forEach(el => el.classList.remove('bg-blue-100', 'border-blue-500'));
+            document.getElementById('diagnosis-result').innerText = '';
+        }
+
+        function selectProblem(index, element) {
+            selectedProblemIndex = index;
+            // Highlight selected
+            document.querySelectorAll('.problem-item').forEach(el => el.classList.remove('bg-blue-100', 'border-blue-500'));
+            element.classList.add('bg-blue-100', 'border-blue-500');
+            document.getElementById('diagnosis-result').innerText = '👉 现在请在右侧选择坏掉的零件...';
+            document.getElementById('diagnosis-result').className = 'text-xl font-bold h-8 text-blue-600 text-center';
+        }
+
+        function checkDiagnosis(part) {
+            if (selectedProblemIndex === -1) {
+                showModal('⚠️', '请先选择症状', '你需要先点击左边的一个症状，才能进行维修哦！', 'text-yellow-600');
+                return;
+            }
+
+            const resEl = document.getElementById('diagnosis-result');
+            if (correctAnswers[selectedProblemIndex] === part) {
+                resEl.innerText = '✅ 诊断正确！修理成功！';
+                resEl.className = 'text-2xl font-bold h-8 text-green-600 text-center animate-bounce';
+                // Mark problem as solved visually
+                const activeProb = document.querySelectorAll('.problem-item')[selectedProblemIndex];
+                activeProb.classList.replace('bg-blue-100', 'bg-green-100');
+                activeProb.classList.replace('border-blue-500', 'border-green-500');
+                activeProb.innerHTML += ' <span class="text-green-600 float-right font-bold">已修好🔧</span>';
+                activeProb.onclick = null; // Disable clicking again
+                selectedProblemIndex = -1; // Reset selection
+            } else {
+                resEl.innerText = '❌ 哎呀，换错零件了，机器人还是坏的。再试一次！';
+                resEl.className = 'text-xl font-bold h-8 text-red-600 text-center anim-shake';
+            }
+        }
+
+        // Initialize App
+        updateUI();
+
+    </script>
+</body>
+</html>
